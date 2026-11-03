@@ -45,20 +45,20 @@ let audioContext = null;
 const firedAlarms = new Set();
 
 function alarmPermissionStatus(){
-  if(!("Notification" in window)) return "Notifications unavailable";
-  return Notification.permission === "granted" ? "Notifications enabled" :
-         Notification.permission === "denied" ? "Notifications blocked" : "Permission not requested";
+  if(!("Notification" in window)) return "Notifikasi tidak tersedia";
+  return Notification.permission === "granted" ? "Notifikasi aktif" :
+         Notification.permission === "denied" ? "Notifikasi diblokir" : "Izin belum diminta";
 }
 function renderAlarmStatus(){
   $("alarmStatus").textContent = alarmPermissionStatus();
 }
 async function enableNotifications(){
-  if(!("Notification" in window)){ showToast("Notifications are not supported here"); return; }
+  if(!("Notification" in window)){ showToast("Notifikasi tidak didukung di browser ini"); return; }
   try{
     const result = await Notification.requestPermission();
     renderAlarmStatus();
-    showToast(result === "granted" ? "Notifications enabled ✓" : "Notification permission not enabled");
-  }catch{ showToast("Could not request notification permission"); }
+    showToast(result === "granted" ? "Notifikasi diaktifkan ✓" : "Izin notifikasi belum diaktifkan");
+  }catch{ showToast("Tidak dapat meminta izin notifikasi"); }
 }
 function playAlarmSound(){
   try{
@@ -80,10 +80,10 @@ function playAlarmSound(){
 function triggerAlarm(task){
   playAlarmSound();
   document.title = "🔔 " + task.title;
-  setTimeout(()=>document.title="DailyTask - To-Do Manager",3500);
+  setTimeout(()=>document.title="To Do List Ananda Putri Aina",3500);
   if("Notification" in window && Notification.permission==="granted"){
     try{
-      new Notification("DailyTask Alarm ⏰",{body:task.title + (task.notes ? "\n"+task.notes : ""), tag:"dailytask-"+task.id});
+      new Notification("Alarm To Do List Ananda Putri Aina ⏰",{body:task.title + (task.notes ? "\n"+task.notes : ""), tag:"dailytask-"+task.id});
     }catch{}
   }
   showToast("🔔 Alarm: " + task.title);
@@ -110,7 +110,7 @@ function startAlarmChecker(){
   alarmTimer=setInterval(checkAlarms,15000);
 }
 function testAlarm(){
-  const task={id:"test",title:"Test alarm",notes:"Your DailyTask alarm is working."};
+  const task={id:"test",title:"Tes alarm",notes:"Alarm aplikasi To Do List Ananda Putri Aina sedang bekerja."};
   triggerAlarm(task);
 }
 
@@ -166,7 +166,7 @@ function renderCalendar(){
 function renderSelectedDate(){
   $("selectedDateTitle").textContent = formatDate(state.selectedDate);
   const count = tasksFor(state.selectedDate).length;
-  $("selectedDateSub").textContent = `${count} task${count===1?"":"s"} scheduled`;
+  $("selectedDateSub").textContent = `${count} tugas ${count===1?"terjadwal":"terjadwal"}`;
 }
 
 function renderTasks(){
@@ -188,17 +188,17 @@ function renderTasks(){
   $("emptyState").classList.toggle("hidden", filtered.length!==0 || list.length!==0);
   if(list.length && !filtered.length){
     $("emptyState").classList.remove("hidden");
-    $("emptyState").querySelector("h3").textContent = "No matching tasks";
-    $("emptyState").querySelector("p").textContent = "Try another search or filter.";
+    $("emptyState").querySelector("h3").textContent = "Tidak ada tugas yang cocok";
+    $("emptyState").querySelector("p").textContent = "Coba cari atau filter lain.";
     $("emptyState").querySelector("#emptyAddBtn").classList.add("hidden");
   } else {
-    $("emptyState").querySelector("h3").textContent = "No tasks for this date";
-    $("emptyState").querySelector("p").textContent = "Add a task and keep your day organized.";
+    $("emptyState").querySelector("h3").textContent = "Belum ada tugas untuk tanggal ini";
+    $("emptyState").querySelector("p").textContent = "Tambahkan tugas agar hari Anda lebih teratur.";
     $("emptyState").querySelector("#emptyAddBtn").classList.remove("hidden");
   }
   const completed = list.filter(t=>t.completed).length;
   const pct = list.length ? Math.round(completed/list.length*100) : 0;
-  $("progressText").textContent = `${completed} of ${list.length} completed`;
+  $("progressText").textContent = `${completed} dari ${list.length} selesai`;
   $("progressPercent").textContent = `${pct}%`;
   $("progressBar").style.width = `${pct}%`;
   $("taskList").querySelectorAll("[data-action]").forEach(el=>{
@@ -207,22 +207,27 @@ function renderTasks(){
 }
 
 function taskHTML(t){
-  const time = t.time ? `⏰ ${escapeHTML(formatTime(t.time))}` : "No time";
+  const time = t.time ? `⏰ ${escapeHTML(formatTime(t.time))}` : "Waktu belum ditentukan";
+  const priorityLabel = {
+    low: "Rendah",
+    medium: "Sedang",
+    high: "Tinggi"
+  }[t.priority] || t.priority;
   return `<article class="task-item ${t.completed?"completed":""}">
-    <button type="button" class="check ${t.completed?"done":""}" data-action="toggle" data-id="${t.id}" aria-label="${t.completed?"Mark pending":"Mark complete"}">${t.completed?"✓":""}</button>
+    <button type="button" class="check ${t.completed?"done":""}" data-action="toggle" data-id="${t.id}" aria-label="${t.completed?"Tandai belum selesai":"Tandai selesai"}">${t.completed?"✓":""}</button>
     <div>
       <div class="task-title">${escapeHTML(t.title)}</div>
       <div class="task-meta">
         <span class="pill">${time}</span>
-        <span class="pill ${escapeHTML(t.priority)}">${escapeHTML(t.priority[0].toUpperCase()+t.priority.slice(1))}</span>
+        <span class="pill ${escapeHTML(t.priority)}">${escapeHTML(priorityLabel)}</span>
         <span class="pill">${escapeHTML(t.category)}</span>
-        ${t.reminder && t.time ? '<span class="pill">Reminder</span>' : ''}
+        ${t.reminder && t.time ? '<span class="pill">Pengingat</span>' : ''}
       </div>
       ${t.notes ? `<p class="task-notes">${escapeHTML(t.notes)}</p>` : ""}
     </div>
     <div class="task-actions">
-      <button type="button" class="small-btn" data-action="edit" data-id="${t.id}">Edit</button>
-      <button type="button" class="small-btn delete" data-action="delete" data-id="${t.id}">Delete</button>
+      <button type="button" class="small-btn" data-action="edit" data-id="${t.id}">Ubah</button>
+      <button type="button" class="small-btn delete" data-action="delete" data-id="${t.id}">Hapus</button>
     </div>
   </article>`;
 }
@@ -239,20 +244,20 @@ function handleTaskAction(action,id){
   if(action==="toggle"){
     list[idx].completed=!list[idx].completed;
     saveTasks(); render();
-    showToast(list[idx].completed ? "Task completed ✓" : "Task marked pending");
+    showToast(list[idx].completed ? "Tugas selesai ✓" : "Tugas ditandai belum selesai");
   } else if(action==="edit") openModal(list[idx]);
   else if(action==="delete"){
-    if(confirm("Delete this task?")){
+    if(confirm("Hapus tugas ini?")){
       list.splice(idx,1);
       if(!list.length) delete state.tasks[state.selectedDate];
-      saveTasks(); render(); showToast("Task deleted");
+      saveTasks(); render(); showToast("Tugas dihapus");
     }
   }
 }
 
 function openModal(task=null){
   state.editingId = task ? task.id : null;
-  $("modalTitle").textContent = task ? "Edit Task" : "Add Task";
+  $("modalTitle").textContent = task ? "Ubah Tugas" : "Tambah Tugas";
   $("taskId").value = task?.id || "";
   $("taskTitle").value = task?.title || "";
   $("taskDate").value = task?.date || state.selectedDate;
@@ -272,7 +277,7 @@ function saveTaskFromForm(e){
   e.preventDefault();
   const title=$("taskTitle").value.trim();
   const date=$("taskDate").value;
-  if(!title || !date){ showToast("Please enter a title and date"); return; }
+  if(!title || !date){ showToast("Silakan isi judul dan tanggal"); return; }
   const task = {
     id: state.editingId || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
     title, date, time:$("taskTime").value,
@@ -297,7 +302,7 @@ function saveTaskFromForm(e){
   state.tasks[date].push(task);
   state.selectedDate=date;
   const d=parseDateKey(date); state.viewDate=new Date(d.getFullYear(),d.getMonth(),1);
-  saveTasks(); closeModal(); render(); showToast(state.editingId?"Task updated":"Task added");
+  saveTasks(); closeModal(); render(); showToast(state.editingId?"Tugas berhasil diperbarui":"Tugas berhasil ditambahkan");
 }
 function renderUpcoming(){
   const today = parseDateKey(todayKey());
@@ -311,8 +316,8 @@ function renderUpcoming(){
   const top=items.slice(0,6);
   $("upcomingList").innerHTML=top.length ? top.map(t=>`<button type="button" class="upcoming-item" data-upcoming="${t.id}">
     <div class="upcoming-date">${escapeHTML(formatDate(t.date,{month:"short",day:"numeric",year:"numeric"}))}${t.time?` · ${escapeHTML(formatTime(t.time))}`:""}</div>
-    <h3>${escapeHTML(t.title)}</h3><p>${escapeHTML(t.category)} · ${escapeHTML(t.priority)} priority</p>
-  </button>`).join("") : '<div class="empty-small">No upcoming pending tasks.</div>';
+    <h3>${escapeHTML(t.title)}</h3><p>${escapeHTML(t.category)} · prioritas ${escapeHTML({low:"rendah",medium:"sedang",high:"tinggi"}[t.priority] || t.priority)}</p>
+  </button>`).join("") : '<div class="empty-small">Belum ada tugas yang akan datang.</div>';
   $("upcomingList").querySelectorAll("[data-upcoming]").forEach(el=>el.addEventListener("click",()=>{
     const t=allTasks().find(x=>String(x.id)===String(el.dataset.upcoming));
     if(t){state.selectedDate=t.date;const d=parseDateKey(t.date);state.viewDate=new Date(d.getFullYear(),d.getMonth(),1);render();}
@@ -330,9 +335,9 @@ function applyTheme(){
 }
 function exportData(){
   const blob=new Blob([JSON.stringify(state.tasks,null,2)],{type:"application/json"});
-  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`dailytask-backup-${todayKey()}.json`;a.click();
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`to-do-list-ananda-putri-aina-backup-${todayKey()}.json`;a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),500);
-  showToast("Backup exported");
+  showToast("Data berhasil diekspor");
 }
 function importData(file){
   const reader=new FileReader();
@@ -345,8 +350,8 @@ function importData(file){
         if(!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Array.isArray(arr)) continue;
         state.tasks[date]=arr.map(t=>({...t,date})); count+=arr.length;
       }
-      saveTasks();render();showToast(`${count} task${count===1?"":"s"} imported`);
-    }catch{showToast("Invalid backup file");}
+      saveTasks();render();showToast(`${count} tugas berhasil diimpor`);
+    }catch{showToast("File backup tidak valid");}
   };
   reader.readAsText(file);
 }
@@ -368,7 +373,7 @@ $("clearCompletedBtn").addEventListener("click",()=>{
   const list=tasksFor(state.selectedDate);const before=list.length;
   state.tasks[state.selectedDate]=list.filter(t=>!t.completed);
   if(!state.tasks[state.selectedDate].length) delete state.tasks[state.selectedDate];
-  saveTasks();render();showToast(`${before-list.length} completed task${before-list.length===1?"":"s"} cleared`);
+  saveTasks();render();showToast(`${before-list.length} tugas selesai dihapus`);
 });
 $("enableNotificationsBtn").addEventListener("click",enableNotifications);
 $("testAlarmBtn").addEventListener("click",testAlarm);
